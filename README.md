@@ -190,6 +190,7 @@ This system allows you keep Finamp's color theme up to date with your dynamic co
 There are two color related "endpoints" you can call:
 
 1. Reload the system accent color from GTK ([Settings > Layout & Theme > "Use System Accent"](https://intradeus.github.io/http-protocol-redirector?r=finamp://internal/settings/layout) needs to be *enabled*)
+
 ```sh
 gdbus call \
     --session \
@@ -198,8 +199,9 @@ gdbus call \
     --method 'com.unicornsonlsd.Finamp.updateAccentColor'
 ```
 
-2. Overwrite the accent color ([Settings > Layout & Theme > "Use System Accent"](https://intradeus.github.io/http-protocol-redirector?r=finamp://internal/settings/layout) needs to be *disabled*)  
+1. Overwrite the accent color ([Settings > Layout & Theme > "Use System Accent"](https://intradeus.github.io/http-protocol-redirector?r=finamp://internal/settings/layout) needs to be *disabled*)  
   Only works when Finamp is running.
+
 ```sh
 gdbus call \
     --session \
