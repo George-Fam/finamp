@@ -54,19 +54,16 @@ jobs:
         df -h
 
     # Use the same flutter setup as the linux build to allow sharing the pub cache and it utilizing the same cache key
-    - name: Determine Flutter stable version
-      uses: subosito/flutter-action@v2
+    - name: Determine Flutter version
       id: flutter-version
-      with:
-        architecture: 'x64'
-        channel: 'stable'
-        dry-run: true
+      uses: ./.github/actions/flutter-version
+
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         # Prebuilt ARM linux builds are not provided, so build flutter from source
         channel: master
-        flutter-version: "${{ steps.flutter-version.outputs.VERSION }}"
+        flutter-version: ${{ steps.flutter-version.outputs.version }}
         cache: false
         pub-cache: true
         # Include arch as linux aarch64 include isar overriding
@@ -159,10 +156,15 @@ jobs:
       with:
         xcode-version: latest-stable
 
+    - name: Determine Flutter version
+      id: flutter-version
+      uses: ./.github/actions/flutter-version
+
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
+        flutter-version: ${{ steps.flutter-version.outputs.version }}
         cache: false
         pub-cache: true
 
@@ -229,20 +231,16 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential cmake ninja-build libgtk-3-dev libmpv-dev
 
-    - name: Determine Flutter stable version
-      uses: subosito/flutter-action@v2
+    - name: Determine Flutter version
       id: flutter-version
-      with:
-        architecture: 'x64'
-        channel: 'stable'
-        dry-run: true
+      uses: ./.github/actions/flutter-version
 
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         # Prebuilt ARM linux builds are not provided, so build flutter from source
         channel: master
-        flutter-version: "${{ steps.flutter-version.outputs.VERSION }}"
+        flutter-version: ${{ steps.flutter-version.outputs.version }}
         cache: false
         pub-cache: true
         # Include arch as linux aarch64 include isar overriding
@@ -349,10 +347,15 @@ jobs:
     - name: Set up Rust (for smtc_windows)
       uses: hecrj/setup-rust-action@v2
 
+    - name: Determine Flutter version
+      id: flutter-version
+      uses: ./.github/actions/flutter-version
+
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
+        flutter-version: ${{ steps.flutter-version.outputs.version }}
         cache: false
         pub-cache: true
 
