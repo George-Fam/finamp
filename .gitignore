@@ -136,3 +136,6 @@ app.*.map.json
 
 # Integration testing artifacts
 integration_test/testing
+
+# FVM Version Cache
+.fvm/
