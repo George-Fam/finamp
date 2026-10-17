@@ -58,7 +58,7 @@
   </screenshots>
   <launchable type="desktop-id">com.unicornsonlsd.finamp.desktop</launchable>
   <releases>
-    <release version="1.0.2" date="2026-10-16">
+    <release version="1.0.2" date="2026-10-18">
       <url
         type="details"
       >https://github.com/jmshrv/finamp/releases/1.0.2</url>
@@ -68,7 +68,8 @@
           Here's what's new:
         </p>
         <ul>
-          <li>Fix startup error when upgrading from inconsistent legacy downloads</li>
+          <li>Fix contrast issues on quick settings banner when a custom accent color is configured</li>
+          <li>Fix startup error when upgrading from inconsistent legacy downloads (mobile only)</li>
         </ul>
         <p>
           <em>Thank you for using Finamp!</em>
