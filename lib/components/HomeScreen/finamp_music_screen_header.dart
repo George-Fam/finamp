@@ -71,7 +71,7 @@ class FinampMusicScreenHeader extends ConsumerWidget implements PreferredSizeWid
         (backButtonInsteadOfTabs ? 0 : 42) +
         // We cannot make this reactive ourselves because it is the surrounding scaffold that needs to rebuild, not
         // the appbar.  So the music screen must watch this setting itself to keep the sizing correct.
-        (FinampSettingsHelper.finampSettings.showQuickActionsBanner ? (isDesktop ? 44.0 : 50.0) : 0),
+        (FinampSettingsHelper.finampSettings.showQuickActionsBanner || true ? (isDesktop ? 44.0 : 50.0) : 0),
   ); // Standard height
 
   @override
@@ -320,7 +320,7 @@ class FinampMusicScreenHeader extends ConsumerWidget implements PreferredSizeWid
             ),
           ),
         ),
-        if (ref.watch(finampSettingsProvider.showQuickActionsBanner))
+        if (ref.watch(finampSettingsProvider.showQuickActionsBanner) || true)
           SizedBox(
             height: isDesktop ? 34.0 : 40.0,
             child: Material(
@@ -339,7 +339,12 @@ class FinampMusicScreenHeader extends ConsumerWidget implements PreferredSizeWid
                     children: [
                       Icon(TablerIcons.bulb, size: 22.0, color: ColorScheme.of(context).onPrimaryContainer),
                       Expanded(
-                        child: Text(context.l10n.quickActionBanner, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          context.l10n.quickActionBanner,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: ColorScheme.of(context).onPrimaryContainer),
+                        ),
                       ),
                       IconButton(
                         icon: Icon(TablerIcons.x, size: 22.0, color: ColorScheme.of(context).onPrimaryContainer),
