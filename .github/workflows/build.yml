@@ -12,8 +12,10 @@ on:
     tags:
       - '*.*.*'
     branches:
-      - main
+      - legacy
       - redesign
+      - main
+      - '*hotfix*'
 
 # set permission so that actions can modify repo contents, which is needed to add release assets
 permissions:
