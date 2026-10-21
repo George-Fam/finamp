@@ -1,6 +1,7 @@
-import 'dart:io';
+import 'dart:io' hide Platform;
 
 import 'package:finamp/models/finamp_models.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' show ClientException;

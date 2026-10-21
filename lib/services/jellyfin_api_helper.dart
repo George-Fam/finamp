@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' hide Platform;
 import 'dart:isolate';
 
 import 'package:chopper/chopper.dart' hide Level;
@@ -9,6 +9,8 @@ import 'package:finamp/components/global_snackbar.dart';
 import 'package:finamp/services/client_certificate_installer.dart';
 import 'package:finamp/services/finamp_logs_helper.dart';
 import 'package:finamp/services/http_aggregate_logging_interceptor.dart';
+import 'package:finamp/utils/platform.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,6 +54,8 @@ class JellyfinApiHelper {
   final _finampUserHelper = GetIt.instance<FinampUserHelper>();
 
   JellyfinApiHelper() {
+    // Browsers have no isolates, so the web build runs background requests on the main thread (see runInIsolate).
+    if (kIsWeb) return;
     ReceivePort startupPort = ReceivePort();
     ReceivePort loggingPort = ReceivePort();
     final logsHelper = GetIt.instance<FinampLogsHelper>();

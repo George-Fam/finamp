@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:finamp/services/feedback_helper.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/material.dart';
 
 class CTALarge extends StatelessWidget {

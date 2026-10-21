@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_sticky_header/flutter_sticky_header.dart';
@@ -19,6 +17,7 @@ import '../MusicScreen/sort_and_filter_row.dart';
 import '../SettingsScreen/finamp_settings_dropdown.dart';
 import '../global_snackbar.dart';
 import '../themed_bottom_sheet.dart';
+import 'package:finamp/utils/platform.dart';
 
 Future<HomeScreenSectionConfiguration?> showHomeScreenSectionConfigurationMenu(
   BuildContext context,

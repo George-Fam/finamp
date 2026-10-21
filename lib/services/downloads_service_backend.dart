@@ -8,6 +8,7 @@ import 'package:chopper/chopper.dart';
 import 'package:collection/collection.dart';
 import 'package:finamp/components/global_snackbar.dart';
 import 'package:finamp/services/downloads_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
 import 'package:isar/isar.dart';
@@ -32,7 +33,7 @@ const finampBaseDownloadDirectory = "songs";
 const finampBaseImagesDirectory = "images";
 
 class IsarPersistentStorage implements PersistentStorage {
-  final _isar = GetIt.instance<Isar>();
+  late final _isar = GetIt.instance<Isar>();
 
   @override
   Future<void> storeTaskRecord(TaskRecord record) => _store(IsarTaskDataType.taskRecord, record.taskId, record);
@@ -164,11 +165,17 @@ class IsarTaskData<T> {
     }
   }
 
+  // 0xcbf29ce484222325 as a signed 64-bit int, parsed so the web compiler accepts the file
+  static final int _fnvOffsetBasis = int.parse("-3750763034362895579");
+
   /// FNV-1a 64bit hash algorithm optimized for Dart Strings
   /// Provided by Isar documentation
   /// Do not use directly, use getHash
   static int _fastHash(String string) {
-    var hash = 0xcbf29ce484222325;
+    // JavaScript numbers can't hold this 64-bit hash. The web build keeps no downloads database, so any
+    // stable per-session hash will do there.
+    if (kIsWeb) return string.hashCode;
+    var hash = _fnvOffsetBasis;
 
     var i = 0;
     while (i < string.length) {
@@ -240,7 +247,7 @@ class IsarTaskQueue implements TaskQueue {
 
   Completer<void>? _callbacksComplete;
 
-  final _isar = GetIt.instance<Isar>();
+  late final _isar = GetIt.instance<Isar>();
 
   /// Initialize the queue and start stored downloads.
   /// Should only be called after background_downloader and downloadsService are
@@ -438,7 +445,7 @@ class IsarTaskQueue implements TaskQueue {
 /// but not yet deleted nodes so that they always get cleaned up, even if the
 /// app suddenly shuts down.
 class DownloadsDeleteService {
-  final _isar = GetIt.instance<Isar>();
+  late final _isar = GetIt.instance<Isar>();
   final DownloadsService _downloadsService;
   final _deleteLogger = Logger("DeleteBuffer");
 
@@ -446,6 +453,8 @@ class DownloadsDeleteService {
   Completer<void>? _callbacksComplete;
 
   DownloadsDeleteService(this._downloadsService) {
+    // The web build has no Isar; its WebDownloadsService never queues anything.
+    if (kIsWeb) return;
     IsarTaskData.globalAge = _isar.isarTaskDatas.where().typeEqualTo(type).sortByAgeDesc().findFirstSync()?.age ?? 0;
   }
 
@@ -680,7 +689,7 @@ class DownloadsDeleteService {
 /// so some nodes may get re-synced unnecessarily after an unexpected reboot
 /// but this should have minimal impact.
 class DownloadsSyncService {
-  final _isar = GetIt.instance<Isar>();
+  late final _isar = GetIt.instance<Isar>();
   final DownloadsService _downloadsService;
   final _syncLogger = Logger("SyncBuffer");
   final _jellyfinApiData = GetIt.instance<JellyfinApiHelper>();

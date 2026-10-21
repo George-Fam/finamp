@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:finamp/components/finamp_app_bar_back_button.dart';
 import 'package:finamp/components/PlaybackReportingSettingsScreen/discord_rpc_icon_selector.dart';
 import 'package:finamp/components/PlaybackReportingSettingsScreen/enabled_discord_rpc.dart';
 import 'package:finamp/l10n/app_localizations.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/material.dart';
 
 import '../components/PlaybackReportingSettingsScreen/enable_playon_toggle.dart';

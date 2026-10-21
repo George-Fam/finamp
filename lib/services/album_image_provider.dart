@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file/file.dart' as cache;
 import 'package:file/local.dart';
+import 'package:file/memory.dart';
 import 'package:finamp/services/theme_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -45,6 +46,8 @@ class AlbumImageRequest {
 }
 
 Future<void> initImageCache() async {
+  // The web build has no file cache: the browser caches the network images itself.
+  if (kIsWeb) return;
   await _imageCache.config.repo.open();
   final entries = await _imageCache.config.repo.getAllObjects();
   final basePath = path_helper.join((await getTemporaryDirectory()).path, _imageCache.config.cacheKey);
@@ -141,7 +144,7 @@ albumImageProvider = Provider.autoDispose.family<AlbumImageInfo, AlbumImageReque
       return AlbumImageInfo.empty(request);
     }
 
-    if (request.fullQuality) {
+    if (request.fullQuality && !kIsWeb) {
       // If we want full quality player images, retrieve them via the image cache instead of linking directly.
       // In most cases, the initial null value will only be seen by the precache logic.
       Future.sync(() async {
@@ -277,6 +280,9 @@ class StubImageCache implements BaseCacheManager {
 
   @override
   Future<FileInfo?> getFileFromMemory(String key) {
+    // On the web audio_service asks for every network artwork. The browser's media session loads it from the URL,
+    // so report it as not cached.
+    if (kIsWeb) return Future.value(null);
     throw UnsupportedError("This cache should not be used");
   }
 
@@ -287,6 +293,9 @@ class StubImageCache implements BaseCacheManager {
 
   @override
   Future<cache.File> getSingleFile(String url, {String? key, Map<String, String>? headers}) {
+    // audio_service then fetches the artwork for its platform side, which on the web only needs the artwork URL.
+    // An empty file keeps it from logging a failure for every track.
+    if (kIsWeb) return Future.value(MemoryFileSystem().file("artwork"));
     throw UnsupportedError("This cache should not be used");
   }
 

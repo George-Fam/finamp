@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
-import 'dart:io';
+import 'dart:io' hide Platform;
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
@@ -12,6 +12,7 @@ import 'package:finamp/components/global_snackbar.dart';
 import 'package:finamp/l10n/app_localizations.dart';
 import 'package:finamp/services/finamp_user_helper.dart';
 import 'package:finamp/services/radio_service_helper.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:finamp/utils/platform_helper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -1094,6 +1095,11 @@ class DownloadLocation {
       // ignore: deprecated_member_use_from_same_package
       legacyUseHumanReadableNames = null;
     }
+    // The web build downloads nothing and has no file system to point at.
+    if (kIsWeb) {
+      _currentPath = "";
+      return;
+    }
     switch (baseDirectory) {
       case DownloadLocationType.internalDocuments:
         _currentPath = (await getApplicationDocumentsDirectory()).path;
@@ -1550,11 +1556,17 @@ class DownloadStub {
   @ignore
   FinampCollection? _finampCollectionCached;
 
+  // 0xcbf29ce484222325 as a signed 64-bit int, parsed so the web compiler accepts the file
+  static final int _fnvOffsetBasis = int.parse("-3750763034362895579");
+
   /// FNV-1a 64bit hash algorithm optimized for Dart Strings
   /// Provided by Isar documentation
   /// Do not use directly, use getHash
   static int _fastHash(String string) {
-    var hash = 0xcbf29ce484222325;
+    // JavaScript numbers can't hold this 64-bit hash. The web build keeps no downloads database, so any
+    // stable per-session hash will do there.
+    if (kIsWeb) return string.hashCode;
+    var hash = _fnvOffsetBasis;
 
     var i = 0;
     while (i < string.length) {

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' hide Platform;
 import 'dart:math';
 
 import 'package:archive/archive_io.dart';
@@ -7,6 +7,7 @@ import 'package:clipboard/clipboard.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:finamp/services/censored_log.dart';
 import 'package:finamp/services/environment_metadata.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
@@ -19,6 +20,8 @@ class FinampLogsHelper {
   IOSink? _logFileWriter;
 
   Future<void> openLog() async {
+    // The web build has no file system, so its logs are only kept in memory.
+    if (kIsWeb) return;
     WidgetsFlutterBinding.ensureInitialized();
     final basePath = (Platform.isAndroid || Platform.isIOS)
         ? await getApplicationDocumentsDirectory()

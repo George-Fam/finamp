@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:audio_session/audio_session.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:finamp/utils/platform.dart';
 
 Future<bool> _currentRouteIsAirPlay(AVAudioSession session) async {
   final route = await session.currentRoute;

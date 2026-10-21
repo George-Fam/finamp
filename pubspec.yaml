@@ -138,6 +138,7 @@ dependencies:
   wakelock_plus: ^1.2.10
   battery_plus: ^7.0.0
   focus_on_it: ^2.0.1
+  web: ^1.1.0
   flutter_svg: ^2.0.17
   meta: ^1.15.0
   analyzer: ^7.0.0

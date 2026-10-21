@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'dart:io' hide Platform;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:finamp/l10n/app_localizations.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

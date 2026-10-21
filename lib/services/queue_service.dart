@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:app_links/app_links.dart';
@@ -21,6 +20,8 @@ import 'package:finamp/services/jellyfin_api_helper.dart';
 import 'package:finamp/services/music_player_background_task.dart';
 import 'package:finamp/services/playback_history_service.dart';
 import 'package:finamp/services/radio_service_helper.dart';
+import 'package:finamp/utils/platform.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -290,6 +291,13 @@ class QueueService {
 
       void updateMediaItem(AlbumImageInfo latest, bool force) async {
         var artUri = latest.uri;
+        // The browser's media session loads the artwork itself, from the server.
+        if (kIsWeb) {
+          if (!force && _audioHandler.mediaItem.valueOrNull?.id != currentMediaItem?.id) return;
+          currentMediaItem = currentMediaItem?.copyWith(artUri: artUri);
+          _audioHandler.mediaItem.add(currentMediaItem);
+          return;
+        }
         if (artUri == null) {
           // replace with placeholder art
           final applicationSupportDirectory = await getApplicationSupportDirectory();

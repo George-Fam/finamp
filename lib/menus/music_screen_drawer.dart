@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:finamp/components/HomeScreen/finamp_music_screen_header.dart';
@@ -17,7 +16,9 @@ import 'package:finamp/services/downloads_service.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
 import 'package:finamp/services/finamp_user_helper.dart';
 import 'package:finamp/services/server_info_provider.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
@@ -135,17 +136,20 @@ class MusicScreenDrawer extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const OfflineModeSwitchListTile(),
-                      const OfflineModeStatusLabel(),
-                      ListTile(
-                        leading: const Padding(
-                          padding: EdgeInsets.only(left: 2.0, right: 12.0),
-                          child: Icon(Icons.file_download, size: 20.0),
+                      // The web build streams only, so it has neither offline mode nor downloads.
+                      if (!kIsWeb) ...[
+                        const OfflineModeSwitchListTile(),
+                        const OfflineModeStatusLabel(),
+                        ListTile(
+                          leading: const Padding(
+                            padding: EdgeInsets.only(left: 2.0, right: 12.0),
+                            child: Icon(Icons.file_download, size: 20.0),
+                          ),
+                          title: Text(AppLocalizations.of(context)!.downloads, style: TextStyle(fontSize: 15.0)),
+                          onTap: () => Navigator.of(context).pushNamed(DownloadsScreen.routeName),
+                          dense: true,
                         ),
-                        title: Text(AppLocalizations.of(context)!.downloads, style: TextStyle(fontSize: 15.0)),
-                        onTap: () => Navigator.of(context).pushNamed(DownloadsScreen.routeName),
-                        dense: true,
-                      ),
+                      ],
                       ListTile(
                         leading: const Padding(
                           padding: EdgeInsets.only(left: 2.0, right: 12.0),

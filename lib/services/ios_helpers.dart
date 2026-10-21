@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
@@ -9,6 +7,7 @@ import 'android_auto_helper.dart';
 import 'audio_service_helper.dart';
 import 'music_player_background_task.dart';
 import 'queue_service.dart';
+import 'package:finamp/utils/platform.dart';
 
 /// iOS-specific helpers for Siri media intents.
 

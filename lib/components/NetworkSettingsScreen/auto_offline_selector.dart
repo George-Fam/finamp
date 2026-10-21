@@ -2,6 +2,7 @@ import 'package:finamp/components/SettingsScreen/finamp_settings_dropdown.dart';
 import 'package:finamp/components/SettingsScreen/subtitle_with_more_info_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:finamp/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/finamp_models.dart';
@@ -12,6 +13,8 @@ class AutoOfflineSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // The web build has no offline mode to switch to.
+    if (kIsWeb) return const SizedBox.shrink();
     AutoOfflineOption option = ref.watch(finampSettingsProvider.autoOffline);
 
     return ListTile(

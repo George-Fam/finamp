@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io';
+import 'dart:io' hide Platform;
 
 import 'package:background_downloader/background_downloader.dart';
 import 'package:collection/collection.dart';
@@ -8,6 +8,7 @@ import 'package:finamp/components/global_snackbar.dart';
 import 'package:finamp/l10n/app_localizations.dart';
 import 'package:finamp/services/finamp_user_helper.dart';
 import 'package:finamp/services/jellyfin_api_helper.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,7 +29,7 @@ const repairStepTrackingName = "repairStep";
 
 class DownloadsService {
   final _downloadsLogger = Logger("downloadsService");
-  final _isar = GetIt.instance<Isar>();
+  late final _isar = GetIt.instance<Isar>();
   final _finampUserHelper = GetIt.instance<FinampUserHelper>();
 
   final _anchor = DownloadStub.fromId(id: BaseItemId("Anchor"), type: DownloadItemType.anchor, name: null);
@@ -38,16 +39,17 @@ class DownloadsService {
 
   // These track total downloads for the overview on the downloads screen
   final Map<DownloadItemState, int> downloadStatuses = {};
-  late final Stream<Map<DownloadItemState, int>> downloadStatusesStream;
+  late final Stream<Map<DownloadItemState, int>> downloadStatusesStream = _downloadStatusesStreamController.stream
+      .throttleTime(const Duration(milliseconds: 200), leading: false, trailing: true);
   final StreamController<Map<DownloadItemState, int>> _downloadStatusesStreamController = StreamController.broadcast();
 
   // This triggers refresh of music/artist screens on item deletion
-  late final Stream<void> offlineDeletesStream;
+  late final Stream<void> offlineDeletesStream = _offlineDeletesStreamController.stream;
   final StreamController<void> _offlineDeletesStreamController = StreamController.broadcast();
 
   // These track node counts for the overview on the downloads screen
   final Map<String, int> downloadCounts = {repairStepTrackingName: 0};
-  late final Stream<Map<String, int>> downloadCountsStream;
+  late final Stream<Map<String, int>> downloadCountsStream = _downloadCountsStreamController.stream;
   final StreamController<Map<String, int>> _downloadCountsStreamController = StreamController.broadcast();
 
   // Private flags/counters used to calculate public sync/download flags
@@ -160,6 +162,11 @@ class DownloadsService {
         .toList();
   });
 
+  /// Constructs a service with no download database or downloader behind it, for subclasses that answer
+  /// every query themselves (the web build's WebDownloadsService).
+  @protected
+  DownloadsService.withoutStorage();
+
   /// Constructs the service.  startQueues should also be called to complete initialization.
   DownloadsService() {
     // Initialize downloadStatuses dict with actual counts of items in isar with
@@ -176,14 +183,6 @@ class DownloadsService {
           .stateEqualTo(state)
           .countSync();
     }
-
-    downloadStatusesStream = _downloadStatusesStreamController.stream.throttleTime(
-      const Duration(milliseconds: 200),
-      leading: false,
-      trailing: true,
-    );
-    offlineDeletesStream = _offlineDeletesStreamController.stream;
-    downloadCountsStream = _downloadCountsStreamController.stream;
 
     updateDownloadCounts();
 

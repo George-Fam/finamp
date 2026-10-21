@@ -5,6 +5,7 @@ import 'package:finamp/components/global_snackbar.dart';
 import 'package:finamp/models/jellyfin_models.dart';
 import 'package:finamp/services/discovery_response_parser.dart';
 import 'package:finamp/services/finamp_user_helper.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
 
@@ -24,10 +25,12 @@ class JellyfinServerClientDiscovery {
 
   static const discoveryMessage =
       "who is JellyfinServer?"; // doesn't seem to be case sensitive, but the Kotlin SDK uses this capitalization
-  final broadcastAddress = InternetAddress("255.255.255.255"); // UDP broadcast address
+  late final broadcastAddress = InternetAddress("255.255.255.255"); // UDP broadcast address
   static const discoveryPort = 7359; // Jellyfin client discovery port
 
   void discoverServers(void Function(ClientDiscoveryResponse response) onServerFound) async {
+    // Browsers can't open UDP sockets, so the web build neither discovers nor advertises servers.
+    if (kIsWeb) return;
     try {
       isDiscovering = true;
 
@@ -79,6 +82,7 @@ class JellyfinServerClientDiscovery {
   }
 
   void advertiseServer() async {
+    if (kIsWeb) return;
     try {
       if (isAdvertising) {
         _clientDiscoveryLogger.warning("Server is already being advertised, ignoring request");

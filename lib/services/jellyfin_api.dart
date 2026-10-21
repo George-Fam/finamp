@@ -1,12 +1,14 @@
 import 'dart:async';
-import 'dart:io' show HttpClient, Platform;
+import 'dart:io' show HttpClient;
 
 import 'package:chopper/chopper.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:finamp/models/finamp_models.dart';
 import 'package:finamp/services/http_aggregate_logging_interceptor.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http show Client;
 import 'package:http/io_client.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -595,12 +597,15 @@ abstract class JellyfinApi extends ChopperService {
         : Level.headers;
 
     final client = ChopperClient(
-      client: http.IOClient(
-        HttpClient()
-          ..connectionTimeout = const Duration(
-            seconds: 10,
-          ), // if we don't get a response by then, it's probably not worth it to wait any longer. this prevents the server connection test from taking too long
-      ),
+      // dart:io's HttpClient doesn't exist in the browser, where http.Client() is a fetch-based client.
+      client: kIsWeb
+          ? http.Client()
+          : http.IOClient(
+              HttpClient()
+                ..connectionTimeout = const Duration(
+                  seconds: 10,
+                ), // if we don't get a response by then, it's probably not worth it to wait any longer. this prevents the server connection test from taking too long
+            ),
       // The first part of the URL is now here
       services: [
         // The generated implementation
@@ -736,6 +741,9 @@ Future<DeviceInfo> getDeviceInfo({required String deviceId}) async {
     MacOsDeviceInfo macOsDeviceInfo = await deviceInfo.macOsInfo;
     final macId = macOsDeviceInfo.systemGUID;
     info = DeviceInfo(name: macOsDeviceInfo.computerName, id: "$macId-$idExtension");
+  } else if (kIsWeb) {
+    WebBrowserInfo webBrowserInfo = await deviceInfo.webBrowserInfo;
+    info = DeviceInfo(name: "${webBrowserInfo.browserName.name} (web)", id: "$deviceId-$idExtension");
   } else {
     throw Exception("Unsupported platform");
   }

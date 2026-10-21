@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:finamp/services/discord_rpc.dart';
+import 'package:finamp/services/discord_rpc.dart'
+    if (dart.library.js_interop) 'package:finamp/services/discord_rpc_stub.dart';
 import 'package:finamp/services/music_player_background_task.dart';
 import 'package:finamp/services/playon_service.dart';
 import 'package:finamp/services/queue_service.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:finamp/utils/platform_helper.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';

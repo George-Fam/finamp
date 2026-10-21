@@ -20,6 +20,7 @@ import 'package:finamp/screens/view_selector.dart';
 import 'package:finamp/screens/volume_normalization_settings_screen.dart';
 import 'package:finamp/services/client_certificate_installer.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -154,11 +155,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text(AppLocalizations.of(context)!.transcoding),
             onTap: () => Navigator.of(context).pushNamed(TranscodingSettingsScreen.routeName),
           ),
-          ListTile(
-            leading: const Icon(Icons.download),
-            title: Text(AppLocalizations.of(context)!.downloadSettings),
-            onTap: () => Navigator.of(context).pushNamed(DownloadsSettingsScreen.routeName),
-          ),
+          if (!kIsWeb)
+            ListTile(
+              leading: const Icon(Icons.download),
+              title: Text(AppLocalizations.of(context)!.downloadSettings),
+              onTap: () => Navigator.of(context).pushNamed(DownloadsSettingsScreen.routeName),
+            ),
           ListTile(
             leading: const Icon(Icons.wifi),
             title: Text(AppLocalizations.of(context)!.networkSettingsTitle),
@@ -212,11 +214,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => Navigator.of(context).pushNamed(LanguageSelectionScreen.routeName),
           ),
           Divider(),
-          ListTile(
-            leading: Icon(TablerIcons.access_point),
-            title: Text(AppLocalizations.of(context)!.serverSharingMenuButtonTitle),
-            onTap: () => showServerSharingPanel(context: context),
-          ),
+          // Sharing advertises the server over UDP, which browsers can't do.
+          if (!kIsWeb)
+            ListTile(
+              leading: Icon(TablerIcons.access_point),
+              title: Text(AppLocalizations.of(context)!.serverSharingMenuButtonTitle),
+              onTap: () => showServerSharingPanel(context: context),
+            ),
           ListTile(
             leading: Icon(TablerIcons.lock_bolt),
             title: Text(AppLocalizations.of(context)!.quickConnectAuthorizationMenuButtonTitle),

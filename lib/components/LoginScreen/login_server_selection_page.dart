@@ -8,6 +8,8 @@ import 'package:finamp/services/client_certificate_installer.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
 import 'package:finamp/services/jellyfin_api_helper.dart';
 import 'package:finamp/services/server_client_discovery_service.dart';
+import 'package:finamp/utils/web_config.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
@@ -43,6 +45,13 @@ class _LoginServerSelectionPageState extends ConsumerState<LoginServerSelectionP
         setState(() {});
       }
     };
+
+    // A web build served next to Jellyfin is told where that server is, which beats making the user type it.
+    final suggestedServer = suggestedServerUrl();
+    if (suggestedServer != null && (widget.serverState.baseUrl?.isEmpty ?? true)) {
+      widget.serverState.baseUrl = suggestedServer;
+      widget.serverState.onBaseUrlChanged(suggestedServer);
+    }
 
     _startDiscovery();
   }
@@ -197,50 +206,53 @@ class _LoginServerSelectionPageState extends ConsumerState<LoginServerSelectionP
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 20.0, bottom: 16.0),
-              child: Text(
-                AppLocalizations.of(context)!.loginFlowLocalNetworkServers,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
+            // Browsers can't search the local network for servers.
+            if (!kIsWeb) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 20.0, bottom: 16.0),
+                child: Text(
+                  AppLocalizations.of(context)!.loginFlowLocalNetworkServers,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ),
-            ),
-            SizedBox(
-              height: 180,
-              child: ListView.builder(
-                shrinkWrap: true,
-                clipBehavior: Clip.antiAlias,
-                itemCount: widget.serverState.discoveredServers.length + 1,
-                itemBuilder: (context, index) {
-                  if (index < widget.serverState.discoveredServers.length) {
-                    // get key and value
-                    final entry = widget.serverState.discoveredServers.entries.elementAt(index);
-                    final serverUrl = entry.key;
-                    final serverInfo = entry.value;
-                    return Padding(
-                      key: ValueKey(serverUrl),
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: JellyfinServerSelectionWidget(
-                        baseUrl: null,
-                        serverInfo: serverInfo,
-                        onPressed: () {
-                          widget.onServerSelected?.call(serverInfo, serverUrl.toString());
-                        },
-                      ),
-                    );
-                  } else {
-                    // show loading indicator below list of discovered servers
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 12.0),
-                      child: ServerDiscoveryStatus(
-                        key: ObjectKey(widget.serverState.clientDiscoveryHandler),
-                        hasServers: widget.serverState.discoveredServers.isNotEmpty,
-                      ),
-                    );
-                  }
-                },
+              SizedBox(
+                height: 180,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  clipBehavior: Clip.antiAlias,
+                  itemCount: widget.serverState.discoveredServers.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index < widget.serverState.discoveredServers.length) {
+                      // get key and value
+                      final entry = widget.serverState.discoveredServers.entries.elementAt(index);
+                      final serverUrl = entry.key;
+                      final serverInfo = entry.value;
+                      return Padding(
+                        key: ValueKey(serverUrl),
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: JellyfinServerSelectionWidget(
+                          baseUrl: null,
+                          serverInfo: serverInfo,
+                          onPressed: () {
+                            widget.onServerSelected?.call(serverInfo, serverUrl.toString());
+                          },
+                        ),
+                      );
+                    } else {
+                      // show loading indicator below list of discovered servers
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: ServerDiscoveryStatus(
+                          key: ObjectKey(widget.serverState.clientDiscoveryHandler),
+                          hasServers: widget.serverState.discoveredServers.isNotEmpty,
+                        ),
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -292,6 +304,7 @@ class _LoginServerSelectionPageState extends ConsumerState<LoginServerSelectionP
               child: Text(AppLocalizations.of(context)!.serverUrl, textAlign: TextAlign.start),
             ),
             TextFormField(
+              initialValue: widget.serverState.baseUrl,
               autocorrect: false,
               keyboardType: TextInputType.url,
               autofillHints: const [AutofillHints.url],

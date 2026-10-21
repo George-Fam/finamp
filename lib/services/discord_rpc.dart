@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:core';
-import 'dart:io';
 
 import 'package:finamp/models/jellyfin_models.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
 import 'package:finamp/services/finamp_user_helper.dart';
 import 'package:finamp/services/jellyfin_api_helper.dart';
 import 'package:finamp/services/music_player_background_task.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter_discord_rpc/flutter_discord_rpc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';

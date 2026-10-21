@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' hide Platform;
 
 import 'package:flutter/material.dart';
 import 'package:finamp/components/finamp_app_bar_back_button.dart';
@@ -10,6 +10,7 @@ import 'package:finamp/components/AddDownloadLocationScreen/custom_download_loca
 import 'package:finamp/models/finamp_models.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
 import 'package:finamp/l10n/app_localizations.dart';
+import 'package:finamp/utils/platform.dart';
 
 class AddDownloadLocationScreen extends StatefulWidget {
   const AddDownloadLocationScreen({super.key});

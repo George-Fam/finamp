@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:finamp/l10n/app_localizations.dart';
 import 'package:finamp/models/finamp_models.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/material.dart';
 
 class ArtistTypeSelectionRow extends StatelessWidget {

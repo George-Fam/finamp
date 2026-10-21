@@ -3,6 +3,7 @@ import 'package:finamp/models/jellyfin_models.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
 import 'package:finamp/services/jellyfin_api.dart' as jellyfin_api;
 import 'package:finamp/services/jellyfin_api_helper.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive.dart';
@@ -15,7 +16,7 @@ final finampUserHelperLogger = Logger("FinampUserHelper");
 /// Jellyfin server, so stuff like logging in/out is handled in JellyfinApiData.
 class FinampUserHelper {
   FinampUserHelper({required this.deviceId}) {
-    _isar.finampUsers.watchObjectLazy(0).listen((event) {
+    _watchCurrentUser().listen((event) {
       _currentUserCache = null;
       setAuthHeader();
       if (GetIt.instance.isRegistered(type: ProviderContainer)) {
@@ -28,24 +29,42 @@ class FinampUserHelper {
     authorizationHeader = await jellyfin_api.getAuthHeader(deviceId: deviceId);
   }
 
-  final _isar = GetIt.instance<Isar>();
+  /// Box holding the users in the web build, which has no Isar. Keyed like Isar, so the current user is 0.
+  static const webUsersBoxName = "WebFinampUsers";
+
+  late final _isar = GetIt.instance<Isar>();
+  late final _webUsers = Hive.box<FinampUser>(webUsersBoxName);
+
+  Stream<void> _watchCurrentUser() => kIsWeb ? _webUsers.watch(key: 0) : _isar.finampUsers.watchObjectLazy(0);
+
+  FinampUser? _getCurrentUser() => kIsWeb ? _webUsers.get(0) : _isar.finampUsers.getSync(0);
+
+  void _putUser(FinampUser user) {
+    if (kIsWeb) {
+      _webUsers.put(user.isarId, user);
+      return;
+    }
+    _isar.writeTxnSync(() {
+      _isar.finampUsers.putSync(user, saveLinks: false);
+    });
+  }
 
   final String deviceId;
 
   final List<void Function()> _postUserHooks = [];
 
   /// Checks if there are any saved users.
-  bool get isUsersEmpty => _isar.finampUsers.countSync() == 0;
+  bool get isUsersEmpty => kIsWeb ? _webUsers.isEmpty : _isar.finampUsers.countSync() == 0;
 
   /// Loads the id from CurrentUserId. Returns null if no id is stored.
-  String? get currentUserId => _isar.finampUsers.getSync(0)?.id;
+  String? get currentUserId => _getCurrentUser()?.id;
 
   /// Loads the FinampUser with the id from CurrentUserId. Returns null if no
   /// user exists.
-  FinampUser? get currentUser => _currentUserCache ??= _isar.finampUsers.getSync(0);
+  FinampUser? get currentUser => _currentUserCache ??= _getCurrentUser();
   FinampUser? _currentUserCache;
 
-  Iterable<FinampUser> get finampUsers => _isar.finampUsers.where().findAllSync();
+  Iterable<FinampUser> get finampUsers => kIsWeb ? _webUsers.values : _isar.finampUsers.where().findAllSync();
 
   late String authorizationHeader;
 
@@ -60,18 +79,14 @@ class FinampUserHelper {
     if (currentUserId != null) {
       var currentUser = Hive.box<FinampUser>("FinampUsers").get(currentUserId);
       if (currentUser != null) {
-        _isar.writeTxnSync(() {
-          _isar.finampUsers.putSync(currentUser, saveLinks: false);
-        });
+        _putUser(currentUser);
       }
     }
   }
 
   /// Saves a new user to the Hive box and sets the CurrentUserId.
   Future<void> saveUser(FinampUser newUser) async {
-    _isar.writeTxnSync(() {
-      _isar.finampUsers.putSync(newUser, saveLinks: false);
-    });
+    _putUser(newUser);
     await setAuthHeader();
     while (_postUserHooks.isNotEmpty) {
       _postUserHooks.removeAt(0)();
@@ -93,9 +108,7 @@ class FinampUserHelper {
     currentUserTemp.views = Map<BaseItemId, BaseItemDto>.fromEntries(newViews.map((e) => MapEntry(e.id, e)));
     currentUserTemp.currentViewId = currentUserTemp.views.keys.first;
 
-    _isar.writeTxnSync(() {
-      _isar.finampUsers.putSync(currentUserTemp, saveLinks: false);
-    });
+    _putUser(currentUserTemp);
   }
 
   void setCurrentUserCurrentViewId(BaseItemId newViewId) {
@@ -103,17 +116,19 @@ class FinampUserHelper {
 
     currentUserTemp.currentViewId = newViewId;
 
-    _isar.writeTxnSync(() {
-      _isar.finampUsers.putSync(currentUserTemp, saveLinks: false);
-    });
+    _putUser(currentUserTemp);
   }
 
   /// Removes the user with the given id. If the given id is the current user
   /// id, CurrentUserId is cleared.
   void removeUser(String id) {
-    _isar.writeTxnSync(() {
-      _isar.finampUsers.filter().idEqualTo(id).deleteAllSync();
-    });
+    if (kIsWeb) {
+      _webUsers.deleteAll(_webUsers.keys.where((key) => _webUsers.get(key)?.id == id).toList());
+    } else {
+      _isar.writeTxnSync(() {
+        _isar.finampUsers.filter().idEqualTo(id).deleteAllSync();
+      });
+    }
     if (_currentUserCache?.id == id) {
       _currentUserCache = null;
     }

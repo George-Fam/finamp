@@ -1,11 +1,11 @@
 // This file collects structured metadata about the device, app, and server
 // for logging, analytics, and diagnostics.
 
-import 'dart:io' show Platform;
-
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:finamp/models/jellyfin_models.dart';
 import 'package:finamp/services/jellyfin_api_helper.dart';
+import 'package:finamp/utils/platform.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_it/get_it.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logging/logging.dart';
@@ -72,6 +72,14 @@ class DeviceInfo {
         deviceModel: info.deviceId,
         osVersion: info.displayVersion,
         platform: 'Windows',
+      );
+    } else if (kIsWeb) {
+      final info = await deviceInfoPlugin.webBrowserInfo;
+      return DeviceInfo(
+        deviceName: info.browserName.name,
+        deviceModel: info.platform ?? 'Unknown',
+        osVersion: info.appVersion ?? 'Unknown',
+        platform: 'Web',
       );
     }
 

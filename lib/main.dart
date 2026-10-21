@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' hide Platform;
 import 'dart:math';
 import 'dart:ui';
 
@@ -35,14 +35,17 @@ import 'package:finamp/screens/queue_restore_screen.dart';
 import 'package:finamp/screens/quick_settings_screen.dart';
 import 'package:finamp/services/album_image_provider.dart';
 import 'package:finamp/services/android_auto_helper.dart';
-import 'package:finamp/services/audio_service_smtc.dart';
+import 'package:finamp/services/audio_service_smtc.dart'
+    if (dart.library.js_interop) 'package:finamp/services/audio_service_smtc_stub.dart';
 import 'package:finamp/services/carplay_helper.dart';
 import 'package:finamp/services/client_certificate_installer.dart';
 import 'package:finamp/services/data_source_service.dart';
 import 'package:finamp/services/dbus_manager.dart';
-import 'package:finamp/services/discord_rpc.dart';
+import 'package:finamp/services/discord_rpc.dart'
+    if (dart.library.js_interop) 'package:finamp/services/discord_rpc_stub.dart';
 import 'package:finamp/services/downloads_service.dart';
 import 'package:finamp/services/downloads_service_backend.dart';
+import 'package:finamp/services/downloads_service_web.dart';
 import 'package:finamp/services/finamp_logs_helper.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
 import 'package:finamp/services/finamp_user_helper.dart';
@@ -59,6 +62,7 @@ import 'package:finamp/services/queue_service.dart';
 import 'package:finamp/services/theme_provider.dart';
 import 'package:finamp/services/ui_overlay_setter_observer.dart';
 import 'package:finamp/services/widget_bindings_observer_provider.dart';
+import 'package:finamp/utils/platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -202,7 +206,8 @@ Future<void> main(List<String> args, {bool integrationTesting = false, bool logi
     };
   }
 
-  DartPluginRegistrant.ensureInitialized();
+  // Web plugins are registered by the generated web_plugin_registrant instead.
+  if (!kIsWeb) DartPluginRegistrant.ensureInitialized();
 
   await findSystemLocale();
   await initializeDateFormatting();
@@ -240,6 +245,11 @@ void _setupOfflineListenLogHelper() {
 }
 
 Future<void> _setupDownloadsHelper() async {
+  // The web build streams only: no downloads, so no downloader or download database either.
+  if (kIsWeb) {
+    GetIt.instance.registerSingleton<DownloadsService>(WebDownloadsService());
+    return;
+  }
   await Future.wait(
     FinampSettingsHelper.finampSettings.downloadLocationsMap.values.map((element) => element.updateCurrentPath()),
   );
@@ -303,13 +313,16 @@ Future<void> _setupKeepScreenOnHelper() async {
 }
 
 Future<void> setupHive() async {
-  final dir = (Platform.isAndroid || Platform.isIOS)
+  // On the web Hive keeps its boxes in IndexedDB, so there is no directory.
+  final dir = kIsWeb
+      ? null
+      : (Platform.isAndroid || Platform.isIOS)
       ? await getApplicationDocumentsDirectory()
       : await getApplicationSupportDirectory();
 
   // Use Hive.init instead of initFlutter to set correct default path.
   WidgetsFlutterBinding.ensureInitialized();
-  Hive.init(dir.path);
+  Hive.init(dir?.path);
   Hive.registerAdapters();
   Hive.registerAdapter(ThemeModeAdapter());
   Hive.registerAdapter(ColorAdapter());
@@ -317,10 +330,12 @@ Future<void> setupHive() async {
   Hive.registerAdapter(FinampStorableQueueInfoMigrationAdapter());
 
   await Future.wait([
-    Hive.openBox<FinampSettings>("FinampSettings", path: dir.path),
-    Hive.openBox<FinampStorableQueueInfo>("Queues", path: dir.path),
-    Hive.openBox<OfflineListen>("OfflineListens", path: dir.path),
-    Hive.openBox<RawThemeResult>("CachedThemes", path: dir.path),
+    Hive.openBox<FinampSettings>("FinampSettings", path: dir?.path),
+    Hive.openBox<FinampStorableQueueInfo>("Queues", path: dir?.path),
+    Hive.openBox<OfflineListen>("OfflineListens", path: dir?.path),
+    Hive.openBox<RawThemeResult>("CachedThemes", path: dir?.path),
+    // Isar has no web backend, so the web build keeps its users in Hive (see FinampUserHelper).
+    if (kIsWeb) Hive.openBox<FinampUser>(FinampUserHelper.webUsersBoxName),
   ]);
 
   // If the settings box is empty, we add an initial settings value here.
@@ -328,6 +343,8 @@ Future<void> setupHive() async {
   if (finampSettingsBox.isEmpty) {
     await finampSettingsBox.put("FinampSettings", await FinampSettings.create());
   }
+
+  if (dir == null) return;
 
   final compactFile = File(path_helper.join(dir.path, "$isarDatabaseName.isar.compact"));
   if (compactFile.existsSync()) {
@@ -353,7 +370,8 @@ Future<void> _setupProviders() async {
   await initImageCache();
 
   DataSourceService.create();
-  AutoOffline.startWatching();
+  // Offline mode plays downloads, and the web build has none.
+  if (!kIsWeb) AutoOffline.startWatching();
 
   unawaited(
     Stream<void>.periodic(Duration(seconds: 1)).forEach((_) {
@@ -398,17 +416,19 @@ Future<void> _setupOSIntegration(List<String> commandLineArgs) async {
   }
 
   // Load the album image from assets and save it to the documents directory for use in Android Auto
-  final applicationSupportDirectory = await getApplicationSupportDirectory();
-  final albumImageFile = File(
-    path_helper.join(applicationSupportDirectory.absolute.path, Assets.images.albumWhite.path),
-  );
-  if (!(await albumImageFile.exists())) {
-    final albumImageBytes = await rootBundle.load(Assets.images.albumWhite.path);
-    final albumBuffer = albumImageBytes.buffer;
-    await albumImageFile.create(recursive: true);
-    await albumImageFile.writeAsBytes(
-      albumBuffer.asUint8List(albumImageBytes.offsetInBytes, albumImageBytes.lengthInBytes),
+  if (!kIsWeb) {
+    final applicationSupportDirectory = await getApplicationSupportDirectory();
+    final albumImageFile = File(
+      path_helper.join(applicationSupportDirectory.absolute.path, Assets.images.albumWhite.path),
     );
+    if (!(await albumImageFile.exists())) {
+      final albumImageBytes = await rootBundle.load(Assets.images.albumWhite.path);
+      final albumBuffer = albumImageBytes.buffer;
+      await albumImageFile.create(recursive: true);
+      await albumImageFile.writeAsBytes(
+        albumBuffer.asUint8List(albumImageBytes.offsetInBytes, albumImageBytes.lengthInBytes),
+      );
+    }
   }
 
   if (Platform.isAndroid) {
